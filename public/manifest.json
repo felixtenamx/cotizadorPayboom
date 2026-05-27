@@ -1,0 +1,14 @@
+{
+  "name": "Cotizador PayBoom",
+  "short_name": "PayBoom",
+  "description": "Plataforma interna de cotización PayBoom",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#fdfbf9",
+  "theme_color": "#009fa2",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 253 251 249;   /* #FDFBF9 cream */
+  --foreground: 34 37 44;
+}
+
+html.dark {
+  --background: 15 18 24;       /* #0F1218 ink-950 */
+  --foreground: 236 238 242;    /* #ECEEF2 ink-100 */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  /* Touch target mínimo 44px en móvil (estándar Apple/Material), 36px en desktop */
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none min-h-[44px] md:min-h-[40px]; }
+  .btn-primary { @apply btn bg-brand-500 text-white hover:bg-brand-600; }
+  .btn-secondary { @apply btn bg-white text-ink-700 border border-ink-200 hover:bg-ink-50
+                       dark:bg-ink-900 dark:text-ink-100 dark:border-ink-700 dark:hover:bg-ink-800; }
+  .btn-teal { @apply btn bg-teal-600 text-white hover:bg-teal-700; }
+  .btn-ghost { @apply btn text-ink-600 hover:bg-ink-100
+                    dark:text-ink-300 dark:hover:bg-ink-800; }
+  .btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700; }
+
+  /* Inputs: 44px min en móvil para tap fácil */
+  .input { @apply w-full rounded-lg border border-ink-200 bg-white px-3 py-2.5 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 min-h-[44px] md:min-h-[40px]
+                dark:bg-ink-900 dark:border-ink-700 dark:text-ink-100 dark:placeholder:text-ink-500; }
+  .label { @apply block text-xs font-medium text-ink-600 mb-1 dark:text-ink-400; }
+
+  .card { @apply bg-white rounded-xl shadow-soft border border-ink-100
+              dark:bg-ink-900 dark:border-ink-800 dark:shadow-none; }
+  .card-pad { @apply card p-5; }
+
+  .chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium; }
+  .chip-brand { @apply chip bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300; }
+  .chip-teal { @apply chip bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300; }
+  .chip-green { @apply chip bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300; }
+  .chip-amber { @apply chip bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300; }
+  .chip-red { @apply chip bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300; }
+  .chip-ink { @apply chip bg-ink-100 text-ink-700 dark:bg-ink-800 dark:text-ink-300; }
+}
