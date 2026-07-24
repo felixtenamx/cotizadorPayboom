@@ -2,8 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { Trash2, Edit2, X, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { PRESET_SETTLEMENT_TIMES } from "@/lib/utils";
+import CostsExplorer from "./CostsExplorer";
 
 async function ensureAdmin() {
   const supabase = await createClient();
@@ -74,6 +75,38 @@ async function deleteCost(formData: FormData) {
   revalidatePath("/admin/costos");
 }
 
+async function duplicateCost(formData: FormData) {
+  "use server";
+  const { supabase, userId } = await ensureAdmin();
+  const id = String(formData.get("id") || "");
+  const { data: src } = await supabase
+    .from("provider_costs")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (!src) {
+    revalidatePath("/admin/costos");
+    return;
+  }
+  // Copia todos los campos relevantes; deja que la BD genere nuevo id y created_at.
+  await supabase.from("provider_costs").insert({
+    provider_id: src.provider_id,
+    service_type: src.service_type,
+    subtype: src.subtype,
+    country_code: src.country_code,
+    currency_code: src.currency_code,
+    cost_variable: src.cost_variable,
+    cost_fixed: src.cost_fixed,
+    cost_chargeback: src.cost_chargeback,
+    cost_refund: src.cost_refund,
+    cost_dispersion: src.cost_dispersion,
+    settlement_time: src.settlement_time,
+    notes: src.notes ? `${src.notes} (copia)` : "(copia)",
+    created_by: userId,
+  });
+  revalidatePath("/admin/costos");
+}
+
 export default async function CostosPage({
   searchParams,
 }: {
@@ -118,62 +151,15 @@ export default async function CostosPage({
         />
       )}
 
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm min-w-[1000px]">
-          <thead className="bg-ink-50 text-ink-600 dark:text-ink-300 text-xs">
-            <tr>
-              <th className="text-left px-3 py-2 font-medium">Proveedor</th>
-              <th className="text-left px-3 py-2 font-medium">Servicio</th>
-              <th className="text-left px-3 py-2 font-medium">Subtipo</th>
-              <th className="text-left px-3 py-2 font-medium">País</th>
-              <th className="text-left px-3 py-2 font-medium">Mon.</th>
-              <th className="text-right px-3 py-2 font-medium">Var %</th>
-              <th className="text-right px-3 py-2 font-medium">Fijo</th>
-              <th className="text-right px-3 py-2 font-medium">CB</th>
-              <th className="text-right px-3 py-2 font-medium">Refund</th>
-              <th className="text-right px-3 py-2 font-medium">Disp.</th>
-              <th className="text-left px-3 py-2 font-medium">Liq.</th>
-              <th className="px-3 py-2"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
-            {!costs || costs.length === 0 ? (
-              <tr><td colSpan={12} className="text-center py-6 text-ink-500 dark:text-ink-400">Sin costos cargados.</td></tr>
-            ) : costs.map((c: any) => (
-              <tr key={c.id} className={editId === c.id ? "bg-amber-50" : ""}>
-                <td className="px-3 py-2 font-medium">{c.provider?.name || "—"}</td>
-                <td className="px-3 py-2">{labelService(c.service_type)}</td>
-                <td className="px-3 py-2">{c.subtype || "—"}</td>
-                <td className="px-3 py-2">{c.country_code || "—"}</td>
-                <td className="px-3 py-2 font-mono">{c.currency_code}</td>
-                <td className="px-3 py-2 text-right">{c.cost_variable ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{c.cost_fixed ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{c.cost_chargeback ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{c.cost_refund ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{c.cost_dispersion ?? "—"}</td>
-                <td className="px-3 py-2">{c.settlement_time || "—"}</td>
-                <td className="px-3 py-2">
-                  <div className="flex justify-end gap-1">
-                    <Link
-                      href={editId === c.id ? "/admin/costos" : `/admin/costos?edit=${c.id}`}
-                      className="btn-ghost text-xs"
-                      title={editId === c.id ? "Cancelar edición" : "Editar"}
-                    >
-                      {editId === c.id ? <X size={14} /> : <Edit2 size={14} />}
-                    </Link>
-                    <form action={deleteCost}>
-                      <input type="hidden" name="id" value={c.id} />
-                      <button type="submit" className="btn-ghost text-xs text-red-600 hover:bg-red-50" title="Eliminar">
-                        <Trash2 size={14} />
-                      </button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <CostsExplorer
+        costs={(costs || []) as any}
+        providers={(providers || []) as any}
+        countries={(countries || []) as any}
+        currencies={(currencies || []) as any}
+        editId={editId}
+        deleteAction={deleteCost}
+        duplicateAction={duplicateCost}
+      />
     </div>
   );
 }
@@ -294,11 +280,3 @@ function CostForm({ mode, row, action, providers, countries, currencies, payment
   );
 }
 
-function labelService(s: string) {
-  return ({
-    card_processing: "Tarjetas",
-    alternative_payment: "Alt. (SPEI/OXXO)",
-    international_payin: "Pay-In Intl.",
-    international_payout: "Pay-Out Intl.",
-  } as Record<string,string>)[s] || s;
-}
