@@ -7,6 +7,7 @@ type Filters = {
   status?: string;
   from?: string;
   to?: string;
+  company?: string;
 };
 
 export default async function CotizacionesListPage({
@@ -16,6 +17,20 @@ export default async function CotizacionesListPage({
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
+
+  // Lista global de empresas (para el dropdown, no depende de los filtros aplicados).
+  const { data: allCompanies } = await supabase
+    .from("quotes")
+    .select("customer_company")
+    .not("customer_company", "is", null)
+    .neq("customer_company", "");
+  const companyOptions = Array.from(
+    new Set(
+      (allCompanies || [])
+        .map((r: any) => (r.customer_company || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "es"));
 
   let query = supabase
     .from("quotes")
@@ -33,6 +48,10 @@ export default async function CotizacionesListPage({
   if (sp.status && sp.status !== "all") {
     query = query.eq("status", sp.status as any);
   }
+  // Filtro: empresa (match exacto)
+  if (sp.company && sp.company !== "all") {
+    query = query.eq("customer_company", sp.company);
+  }
   // Filtro: rango de fechas (inclusivo)
   if (sp.from) {
     query = query.gte("created_at", sp.from);
@@ -44,7 +63,13 @@ export default async function CotizacionesListPage({
   }
 
   const { data: quotes } = await query;
-  const hasFilters = !!(sp.q?.trim() || (sp.status && sp.status !== "all") || sp.from || sp.to);
+  const hasFilters = !!(
+    sp.q?.trim() ||
+    (sp.status && sp.status !== "all") ||
+    (sp.company && sp.company !== "all") ||
+    sp.from ||
+    sp.to
+  );
 
   return (
     <div className="space-y-6">
@@ -59,7 +84,7 @@ export default async function CotizacionesListPage({
       {/* Barra de filtros (form GET) */}
       <form className="card-pad space-y-3" method="GET">
         <div className="grid md:grid-cols-12 gap-3">
-          <div className="md:col-span-5">
+          <div className="md:col-span-4">
             <label className="label">Buscar</label>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
@@ -71,6 +96,15 @@ export default async function CotizacionesListPage({
               />
             </div>
           </div>
+          <div className="md:col-span-3">
+            <label className="label">Empresa (cliente)</label>
+            <select name="company" defaultValue={sp.company || "all"} className="input">
+              <option value="all">Todas las empresas</option>
+              {companyOptions.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
           <div className="md:col-span-2">
             <label className="label">Estado</label>
             <select name="status" defaultValue={sp.status || "all"} className="input">
@@ -81,11 +115,11 @@ export default async function CotizacionesListPage({
               <option value="rejected">Rechazada</option>
             </select>
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <label className="label">Desde</label>
             <input type="date" name="from" defaultValue={sp.from || ""} className="input" />
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <label className="label">Hasta</label>
             <input type="date" name="to" defaultValue={sp.to || ""} className="input" />
           </div>
