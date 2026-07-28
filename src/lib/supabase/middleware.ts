@@ -32,6 +32,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/mcp") ||
     pathname === "/favicon.ico";
 
   if (!user && !isPublic) {
